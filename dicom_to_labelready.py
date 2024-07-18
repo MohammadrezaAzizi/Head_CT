@@ -46,23 +46,37 @@ def processed_image_export(input_image, filename, output_dir):
 dir = "C:/Users/pc/Desktop/F_gholami/MR.data/1/"
 def dicom_to_jpeg(input_directory):
     # Give all dicom files in a directory the ".dcm" suffix
-    for filename in os.listdir(input_directory):
-        if not (filename.lower().endswith('dcm') & filename.lower().endswith('png') & filename.lower().endswith('jpg')):
-            if not os.path.isdir(os.path.join(input_directory,filename)):
-                os.rename(os.path.join(input_directory, filename), os.path.join(input_directory,filename.split(".")[0]+".dcm"))    
-            else:
-                pass
+    #for filename in os.listdir(input_directory):
+    #    if not (filename.lower().endswith('dcm') & filename.lower().endswith('png') & filename.lower().endswith('jpg')):
+    #        if not os.path.isdir(os.path.join(input_directory,filename)):
+    #            os.rename(os.path.join(input_directory, filename), os.path.join(input_directory,filename.split(".")[0]+".dcm"))    
+    #        else:
+    #            pass
 
     for filename in os.listdir(input_directory):
         if filename.lower().endswith('dcm'):
+            ## Next line is left out since the api had some issue reading the info of one single dicom image.
             image = sitk.ReadImage(os.path.join(input_directory, filename))
-            image_filename = input_directory+filename.split(".")[0]+".jpg"
+            info_image = pydicom.dcmread(os.path.join(input_directory, filename))
+            ## Reach the element private creator
+            #print(info_image[(0x0010, 0x0010)])
+            name_tag = info_image[(0x0010, 0x0010)]
+            name = name_tag.value
+            name = str(name).split("^")
+            name = name[0]+", "+name[1]
+            filename = name+"_"+filename
+            #info_image= info_image.pixel_array
+            
+
             # Image normalization (zero-centered)
             image = mean_normalization(image)
             image = np.squeeze(image, axis=0)
-            plt.imsave(fname=image_filename,arr=image, format='jpg', cmap='gray', dpi=300)
+            ## The next line is commented out because of the low quality of outputs. Output of dicom reader app is better.
+            #image_filename = input_directory+filename.split(".")[0]+".jpg"
+
+            #plt.imsave(fname=image_filename,arr=image, format='jpg', cmap='gray', dpi=300)
             clahe_img = image.astype(dtype=np.uint16)
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+            clahe = cv2.createCLAHE(clipLimit=20, tileGridSize=(8,8))
             clahe_img = clahe.apply(clahe_img) + 30
             processed_image_export(input_image=clahe_img,filename=filename, output_dir=dir)
             #--NOT Fixed Yet /## Rescale intensity to [0,255] cast to uint8 for JPEG
@@ -70,6 +84,25 @@ def dicom_to_jpeg(input_directory):
             #--************* /corrector = sitk.N4BiasFieldCorrectionImageFilter()
             #--************* /output = corrector.Execute(image)
 dicom_to_jpeg(input_directory=dir)
+
+def f_gh_jpg_rename(rename_dir=str):
+    for filename in os.listdir(rename_dir):    
+        if filename.lower().endswith(".dcm") & filename.lower().endswith(".dcm") is not True & os.path.isdir(os.path.join(rename_dir,filename)) is not True:
+            print(os.path.join(rename_dir, filename))
+            
+            info_image = pydicom.dcmread(os.path.join(rename_dir, filename))
+            ## Reach the element private creator
+            name_tag = info_image[(0x0010, 0x0010)]
+            name = name_tag.value
+            name = str(name).split("^")
+            name = name[0]+", "+name[1]
+            filename1 = name+"_"+filename
+            filename1 = filename1.split(".")[0]
+            filename = filename.split(".")[0]
+            src = os.path.join(rename_dir, f"{filename}.jpg")
+            dst = os.path.join(rename_dir,f"{filename1}.jpg")
+            os.rename(src, dst)
+#f_gh_jpg_rename(rename_dir=dir)
 
 def dicom_2_jpg_using_pydicom(input_directory, output_directory):
     for filename in os.listdir(dir):
