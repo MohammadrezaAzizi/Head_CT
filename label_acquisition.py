@@ -66,37 +66,74 @@ def retrieve_labels(dir_list:list, maxclass:int):
     sorted_pairs = sorted(zip(names, coords), key=lambda x: [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', x[0])])
     # Unzipping the sorted pairs
     names, coords = zip(*sorted_pairs)
-
     return names, coords
-def sequencer(seq_window:int, reverse:bool):
+
+def sequencer(seq_window:int, reverse:bool, train_rate:float, val_rate:float):
     names, coords = retrieve_labels(dir_list,11)
-    print(len(names))
+    train_sequences = []
     valid_sequences = []
+    test_sequences = []
     # Let's go through names and check slice numbers to see if it fits our window
     for idx, name in enumerate(names):
+        base_index = 0
         # checking which idx is the threshold for our name set (where does the current patient end)
-        if names[idx-1].split("_")[0] != name.split("_")[0]:
-            slice_numbers = []
-            patient_seq = []
-            # Creating the list of slice numbers for a patient
+        if (idx/len(names))<=train_rate and names[idx-1].split("_")[0] != name.split("_")[0]:
+            patient_slices = []
+            # Creating the list of slice names for a patient ************** PROBLEM!!
             for i in range(idx):
-                slice_numbers.append(names[i].split("_")[1].split(".")[0])
-
+                patient_slices.append(names[i])
             #---------------------------------------------------------------
-            # You don't have the means to control other patients and their threshold and this may only work with the first patient. 
+            ## Took care of intra-patient sequence creation defining a list that includes all slices of a patient.
             #---------------------------------------------------------------
             
+            #---------------------------------------------------------------
+            # Code the thresholding and sampling based on percentage share for each subsample.
+            ## So far I know the percentage should only be checked via "len(names)" as the denominator!
+            ## Also, I guess implementing the percentage if/else condition should be checked in the patient threshold if!
+            #---------------------------------------------------------------
+
             # Step 1: Generate sequences based on the sorted names list
-            for i in range(len(names[:idx-1]) - seq_window + 1):
-                sequence = names[i:i + seq_window]
-                valid_sequences.append(sequence)
-
+            for i in range(len(patient_slices) - seq_window + 1):
+                sequence = patient_slices[i:i + seq_window]
+                train_sequences.append(sequence)
                 # Step 2: Add reverse sequences if reverse=True
-            if reverse:
-                valid_sequences.append(list(reversed(sequence)))
+                if reverse:
+                    train_sequences.append(list(reversed(sequence)))
+        
+        ## Validation sequences
+        elif train_rate<(idx/len(names)) and (idx/len(names))<train_rate+val_rate and names[idx-1].split("_")[0] != name.split("_")[0]:
+            patient_slices = []
+            # Creating the list of slice names for a patient
+            for i in range(idx):    #************** PROBLEM!! Reduce train list from patient slices!!
+                patient_slices.append(names[i])
 
-    return valid_sequences
-valid_seq = sequencer(seq_window=3, reverse=False)
-print(valid_seq)
+            # Step 1: Generate sequences based on the sorted names list
+            for i in range(len(patient_slices) - seq_window + 1):
+                sequence = patient_slices[i:i + seq_window]
+                valid_sequences.append(sequence)
+                # Step 2: Add reverse sequences if reverse=True
+                if reverse:
+                    valid_sequences.append(list(reversed(sequence)))
+        
+            # Time to reset
+            #----------------------------------------------------
+            # first make sure the coords can be used by sequences of names.
+            #----------------------------------------------------
+        else:
+            patient_slices = []
+            # Creating the list of slice names for a patient
+            for i in range(idx): #************** PROBLEM!! Reduce train and validation list from patient slices!!
+                patient_slices.append(names[i]) 
+            # Step 1: Generate sequences based on the sorted names list
+            for i in range(len(patient_slices) - seq_window + 1):
+                sequence = patient_slices[i:i + seq_window]
+                test_sequences.append(sequence)
+                # Step 2: Add reverse sequences if reverse=True
+                if reverse:
+                    test_sequences.append(list(reversed(sequence)))
+    return train_sequences, valid_sequences, test_sequences
+
+train_sequences, valid_sequences, test_sequences = sequencer(seq_window=6, reverse=True, train_rate=0.7, val_rate= 0.2)
+print(len(test_sequences))
 #for att in label["JAHANGIRI, MAHBOOBEH_184.jpg"]["instances"]:
 #    print(att)
