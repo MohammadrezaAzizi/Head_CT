@@ -99,7 +99,6 @@ def sequencer(seq_window:int, reverse:bool, train_rate:float, val_rate:float):
                 # Step 2: Add reverse sequences if reverse=True
                 if reverse:
                     train_sequences.append(list(reversed(sequence)))
-        
         ## Validation sequences
         elif train_rate<(idx/len(names)) and (idx/len(names))<train_rate+val_rate and names[idx-1].split("_")[0] != name.split("_")[0]:
             patient_slices = []
@@ -119,11 +118,14 @@ def sequencer(seq_window:int, reverse:bool, train_rate:float, val_rate:float):
             #----------------------------------------------------
             # first make sure the coords can be used by sequences of names.
             #----------------------------------------------------
-        else:
+        elif (idx/len(names))>train_rate+val_rate:# and names[idx-1].split("_")[0] != name.split("_")[0]:
             patient_slices = []
+            print(name)
             # Creating the list of slice names for a patient
+            print("patient slice before:     ", len(patient_slices))
             for i in range(idx): #************** PROBLEM!! Reduce train and validation list from patient slices!!
-                patient_slices.append(names[i]) 
+                patient_slices.append(names[i])
+            print("patient slice after:     ", len(patient_slices))
             # Step 1: Generate sequences based on the sorted names list
             for i in range(len(patient_slices) - seq_window + 1):
                 sequence = patient_slices[i:i + seq_window]
