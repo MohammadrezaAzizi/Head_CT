@@ -18,8 +18,9 @@ def retrieve_labels(dir_list:list, maxclass:int):
             label = json.load(f)
             # Turns out you can't iterate json loaded files in a for-loop. Every fix I found suggested appending into a list.
             json_lis.append(label)
+    ## Making a copy to not mess with the indexing of the original list.
     json_lis_copy = json_lis.copy()
-    ## Making sure the signature of annotation app is gone.
+    ## Making sure the signature of annotation app is gone by deleting the version key,value pair.
     for idx, label in enumerate(json_lis):
         for image_name in json_lis_copy[idx].copy():
             if image_name == "___sa_version___":
@@ -30,6 +31,10 @@ def retrieve_labels(dir_list:list, maxclass:int):
     for label in json_lis:
         for image_name in label:
             ## Defining as many temp_lists as needed
+            """
+            Assuemed that there can only be as much as 10 points for a singla patient.
+            So the default maximum number of catheters is set at 10.
+            """
             temp_list1, temp_list2, temp_list3, temp_list4, temp_list5, temp_list6, temp_list7, temp_list8, temp_list9, temp_list10, temp_list11 = ([] for i in range(maxclass))
             names.append(image_name)
             ## Iterating through instances to change values of temp_lists to the existing values from annotation json
